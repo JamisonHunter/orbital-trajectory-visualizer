@@ -1,14 +1,56 @@
-import { NgtCanvas } from 'angular-three';
-import { Experience } from './experience/experience.component';
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, ElementRef, Inject, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
+import * as THREE from 'three';
+import { isPlatformBrowser } from '@angular/common';
+
 @Component({
-    selector: 'app-root',
-    imports: [RouterOutlet, NgtCanvas],
-    templateUrl: './app.component.html',
-    styleUrl: './app.component.css'
+  selector: 'app-root',
+  template: '<div #rendererContainer></div>',
+  styles: ['div { width: 100%; height: 100vh; display: block; }']
 })
-export class AppComponent {
-    sceneGraph = Experience;
-    title = 'orbital-trajectory-visualizer';
+export class AppComponent implements OnInit {
+  @ViewChild('rendererContainer', { static: true }) rendererContainer!: ElementRef;
+
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+
+  ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initThree();
+    }
+  }
+
+  initThree() {
+    // ✅ This code now only runs in the browser
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    this.rendererContainer.nativeElement.appendChild(renderer.domElement);
+
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const animate = () => {
+      requestAnimationFrame(animate);
+      cube.rotation.x += 0.01;
+      cube.rotation.y += 0.01;
+      renderer.render(scene, camera);
+    };
+    animate();
+  }
 }
